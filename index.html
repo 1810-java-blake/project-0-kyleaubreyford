@@ -8,24 +8,33 @@
     <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
     <script src="main.js"></script>
 </head>
-<body>
+<body onresize="resizeScreen()">
     <!-- Spotifiy Player Script -->
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
+    <div id=songTitle> Hi</div>    
+
+    <span id=currentWord>Get Ready</span>
+    <span id=lyricsDiv>No lyrics Found</span>
+    <br>
+    <div id="myBar"  style="width:0%">0%</div>
+
+    
 
 
-    <div id=currentWord>Get Ready</div>
-    <div id=lyricsDiv>This is your song.</div>
-
-    <button id=lyricsButton>Click here for lyrics.</button>
-    <button id=songButton>Connect Spotify</button>
-
+    <br>
     <button id=startSong>Start Song</button>
 
     <button id=replayButton>Replay Song</button>
-    <div id=replayText>Get Ready</div>
+    <br>
 
-    <span id="timer"></span>s
+    <button id=previousSong>Previous Song</button>
+    <button id=nextSong>Next Song</button>
+
+    <br>
+    <div id=replayText>Replay Text</div>
+
+    <span id="timer"></span>
     <ul id=wordList>Word Timers</ul>
 </body>
 </html>

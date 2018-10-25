@@ -1,14 +1,23 @@
+let sHeight = screen.height;
+let sWidth = screen.width;
+
+function resizeScreen() {
+    sHeight = screen.height;
+    sWidth = screen.width;
+}
 document.addEventListener("DOMContentLoaded", () => {
     let test = document.getElementById("lyricsDiv");
-    let testButton = document.getElementById("lyricsButton");
+    let songTitle = document.getElementById("songTitle");
     let cWordText = document.getElementById("currentWord");
     let wordList = document.getElementById("wordList");
-
-    let songButton = document.getElementById("songButton");
+    let elem = document.getElementById("myBar");
     let startSong = document.getElementById("startSong");
 
     let replayButton = document.getElementById("replayButton");
     let replayText = document.getElementById("replayText");
+
+    let nextSong = document.getElementById("nextSong");
+    let previousSong = document.getElementById("previousSong");
 
     let timer = document.getElementById("timer");
 
@@ -22,9 +31,16 @@ document.addEventListener("DOMContentLoaded", () => {
     let elapsedTime = Date.now() - songTime;
     let songFinishTime;
 
+    let startTime = 0;
+    let endTime = 0;
+    let wordTimer = 0;
+    let keypressDowned = false;
+
+    let progressBar;
+    let progressBarWidth = 0;
 
     window.onSpotifyWebPlaybackSDKReady = () => {
-        const token = 'BQDpFXxG_wyQX3CVKSFjO694DhB4XEOVhYu-SRsqMDph_GM1lR2r4AAZn69nx6t4XVYm-4BSQfMfAGCwCQ8wVdU4YsgGsEhKjbYPmXdq0hVj0kufAJ5xZOP2FASYiWGXuXBrE1nkQqYSiY1qt7DwmwsXBaKfi_Uer1Xxg3w';
+        const token = 'BQDWkAD2aVH91A5P3yMWxTXkLXP8nySh3GdhWD0X7PRI170ltslz9Mae9U7zNuyzE33Gxc5h6n55yE334UFrMRZYOyFuWYFe91loXQRf-L6BViHDF6fMgsGOAEmU5_txWiuV2TOFkMrOVsVyYAcXwCKktQosGFRkf5TqioQ';
         const player = new Spotify.Player({
             name: 'Web Playback SDK Quick Start Player',
             getOAuthToken: cb => { cb(token); }
@@ -40,8 +56,37 @@ document.addEventListener("DOMContentLoaded", () => {
         player.addListener('player_state_changed', state => {
             currentSong = state.track_window.current_track.name;
             currentArtist = state.track_window.current_track.artists[0].name;
-            console.log(currentArtist);
-            console.log(currentSong);
+            if (currentSong) {
+
+                songTitle.innerHTML = (`${currentSong} by ${currentArtist}`);
+
+                fetch(`https://api.lyrics.ovh/v1/${currentArtist}/${currentSong}`)
+                    //  .json() method returns a Promise
+                    // of the JSON response body parsed fromJSOn.
+                    .then(res => res.json())
+                    .then(data => {
+                        //test.innerHTML = data.lyrics;
+                        if (!songFI) {
+                            songQueue.addAll(lyricsSeparate(data.lyrics));
+                            currentWord = songQueue.remove();
+                            test.innerHTML = songQueue.printOutInOrder();
+
+                            //console.log(currentWord);
+                            cWordText.innerHTML = currentWord;
+                            songFI = true;
+                        }
+                    })
+                    .catch(err => console.log(err));
+
+
+            }
+
+
+
+
+
+
+
         });
 
         // Ready
@@ -58,19 +103,26 @@ document.addEventListener("DOMContentLoaded", () => {
         player.connect();
 
 
-
-        songButton.addEventListener("click", event => {
-            player.togglePlay().then(() => {
-                console.log('Toggled playback! 1');
+        previousSong.addEventListener("click", event => {
+            player.previousTrack().then(() => {
+                console.log('Moved to previous Track');
             });
         });
+
+
+        nextSong.addEventListener("click", event => {
+            player.nextTrack().then(() => {
+                console.log('Set to next track!');
+            });
+        });
+
 
         startSong.addEventListener("click", event => {
 
             player.resume().then(() => {
                 console.log('Start playing in case song was paused! 1');
             });
-            player.seek(140 * 1000).then(() => {
+            player.seek(150 * 1000).then(() => {
                 console.log('Start at Song at 0 1');
             });
             songTime = Date.now();
@@ -78,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let interval = setInterval(function () {
                 if (tempSong == currentSong) {
                     elapsedTime = Date.now() - songTime;
-                    timer.innerHTML = (elapsedTime / 1000).toFixed(2);
+                    timer.innerHTML = (`${(elapsedTime / 1000).toFixed(2)}s`);
                 } else {
                     player.pause().then(() => {
                         console.log('Stop song because main song was over 1.');
@@ -91,6 +143,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
 
+
+
+
         replayButton.addEventListener("click", event => {
 
             player.previousTrack().then(() => {
@@ -98,7 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
 
-            player.seek(0 * 1000).then(() => {
+            player.seek(150 * 1000).then(() => {
                 console.log('Start Song at 0 2');
             });
             player.resume().then(() => {
@@ -109,7 +164,6 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log(replayQueue);
             let replayWord = replayQueue.remove();
             console.log(replayWord);
-            replayText.innerHTML = replayWord.word;
 
 
             songTime = Date.now();
@@ -118,28 +172,51 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log(`songFinishTime is ${songFinishTime}`);
             console.log(`elapsedTime is ${elapsedTime}`);
             let tempSong = new String(currentSong);
-
+            const rows = 3;
+            const columns = 10;
+            let yUnit = sHeight / 3;
+            let xUnit = sWidth / 10;
+            let curY = 0;
+            let curX = 0;
             let interval = setInterval(function () {
                 if (songFinishTime > elapsedTime) {
                     elapsedTime = Date.now() - songTime;
-                    if (replayWord.totalTime > elapsedTime) {
-                        // Put in conditions to make word grow bigger when time is close enough
-                        console.log(`elapsedTime is ${elapsedTime}`);
+                    if (replayWord) {
+                        if (replayWord.totalTime > elapsedTime) {
+                            // Put in conditions to make word grow bigger when time is close enough
 
-                        if (elapsedTime + replayWord.time > replayWord.totalTime) {
-                            replayText.style.color = "blue";
+                            //console.log(`${replayWord.word} is ${elapsedTime + replayWord.time} comparedto ${replayWord.totalTime - 4000}`);
+                            // If currentTime 200 + wordSingingtime 100
+                            if (elapsedTime + replayWord.time > replayWord.totalTime - 4000) {
 
-                            //Word should be highlighted
-                        } else {
-                            replayText.style.color = "red";
-                            //Countdown to word should be spoken?
+                                //Positioning
+                                if (curY >= rows) {
+                                    curY = 0;
+                                }
+                                if (curX >= columns) {
+                                    curX = 0;
+                                    curY++;
+                                }
+
+
+                                let flashWord = document.createElement("p");
+                                flashWord.classList.add("flashWord");
+                                flashWord.innerHTML = replayWord.word;
+                                flashWord.style.position = "absolute"
+                                flashWord.style.top = curY * yUnit + 'px';
+                                flashWord.style.left = curX * xUnit + 'px';
+                                let parent = document.getElementById("songTitle");
+                                parent.appendChild(flashWord);
+                                setTimeout(function () { flashWord.style.visibility = "hidden" }, 4000);
+
+                                //pop next word out
+                                curX++;
+                                replayWord = replayQueue.remove();
+                            }
+
+
 
                         }
-                    } else {
-                        //Put in code to move on to next word.
-                        replayWord = replayQueue.remove();
-                        replayText.innerHTML = replayWord.word;
-
                     }
                     timer.innerHTML = (elapsedTime / 1000).toFixed(2);
                 } else {
@@ -163,36 +240,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-    testButton.addEventListener("click", event => {
-        fetch(`https://api.lyrics.ovh/v1/${currentArtist}/${currentSong}`)
-            //  .json() method returns a Promise
-            // of the JSON response body parsed fromJSOn.
-            .then(res => res.json())
-            .then(data => {
-                //test.innerHTML = data.lyrics;
-                if (!songFI) {
-                    songQueue.addAll(lyricsSeparate(data.lyrics));
-                    console.log(songQueue);
-                    currentWord = songQueue.remove();
-                    test.innerHTML = songQueue.printOutInOrder();
 
-                    console.log(currentWord);
-                    cWordText.innerHTML = currentWord;
-                    songFI = true;
-                }
-            })
-            .catch(err => console.log(err));
-    });
 
-    let startTime = 0;
-    let endTime = 0;
-    let wordTimer = 0;
-    let keypressDowned = false;
     document.addEventListener("keydown", function (event) {
         // console.log(event.which);
-
-        if (songFI) {
+        if (songFI && (event.keyCode == 74 || event.keyCode == 70)) {
             if (keypressDowned === false) {
+
+                // Starts the interval function for time bar
+                progressBar = setInterval(frame, 10);
+                function frame() {
+
+                    progressBarWidth++;
+                    elem.style.width = progressBarWidth + '%';
+                    elem.innerHTML = progressBarWidth * 1;
+
+                }
 
                 startTime = getTime();
                 //console.log(`Start time is ${startTime}`);
@@ -204,13 +267,14 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     document.addEventListener("keyup", function (event) {
-
-        if (songFI) {
-
+        console.log(event.keyCode);
+        if (songFI  && (event.keyCode == 74 || event.keyCode == 70)) {
+            clearInterval(progressBar);
+            progressBarWidth = 0;
             //console.log(event.which);
             endTime = getTime();
-            //console.log(`End time is ${endTime}`);
-            wordTimer = Date.daysBetween(startTime, endTime);
+            //console.log(`End time is ${endTime}, start Time is ${startTime}`);
+            wordTimer = endTime - startTime;
             //console.log(`Difference between time is ${wordTimer}`);
             keypressDowned = false;
             let song = {
@@ -220,7 +284,12 @@ document.addEventListener("DOMContentLoaded", () => {
             };
             replayQueue.add(song);
             currentWord = songQueue.remove();
-            cWordText.innerHTML = currentWord;
+            if (currentWord) {
+                cWordText.innerHTML = currentWord;
+            } else {
+                cWordText.innerHTML = "End of First Round";
+            }
+
             test.innerHTML = songQueue.printOutInOrder();
 
             let node = document.createElement("li");    // Create a <li> node
@@ -234,23 +303,6 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
 });
-
-
-Date.daysBetween = function (date1, date2) {
-    //Get 1 day in milliseconds
-    var one_day = 1000 * 60 * 60 * 24;
-
-    // Convert both dates to milliseconds
-    var date1_ms = date1.getTime();
-    var date2_ms = date2.getTime();
-
-    // Calculate the difference in milliseconds
-    var difference_ms = date2_ms - date1_ms;
-
-    // Convert back to days and return
-    return difference_ms;
-}
-
 
 
 function getTime() {
@@ -290,20 +342,22 @@ function Queue() {
 
     }
 
+    Queue.prototype.peek = function () {
+        return this.data[this.data.length - 1];
+    }
+
     Queue.prototype.remove = function () {
         return this.data.pop();
     }
 
-    Queue.prototype.first = function () {
+    Queue.prototype.bottom = function () {
         return this.data[0];
     }
 
-    Queue.prototype.last = function () {
-        return this.data[this.data.length - 1];
-    }
 
     Queue.prototype.size = function () {
         return this.data.length;
     }
 
 }
+

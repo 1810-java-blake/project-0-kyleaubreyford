@@ -6,28 +6,32 @@ function resizeScreen() {
     sWidth = screen.width;
 }
 document.addEventListener("DOMContentLoaded", () => {
-    let test = document.getElementById("lyricsDiv");
+    let lyricsText = document.getElementById("lyricsDiv");
     let songTitle = document.getElementById("songTitle");
     let cWordText = document.getElementById("currentWord");
-    let wordList = document.getElementById("wordList");
+    //let wordList = document.getElementById("wordList");
     let elem = document.getElementById("myBar");
-    let startSong = document.getElementById("startSong");
+    let startButton = document.getElementById("startButton");
     let main = document.getElementById("main");
 
     let replayButton = document.getElementById("replayButton");
     let replayText = document.getElementById("replayText");
 
-    let nextSong = document.getElementById("nextSong");
-    let previousSong = document.getElementById("previousSong");
+    let nextButton = document.getElementById("nextSong");
+    let previousButton = document.getElementById("previousSong");
 
     let timer = document.getElementById("timer");
 
     let currentArtist = "taylor swift";
     let currentSong = "shake it off";
+    let previousSong = "";
+    let previousArtist = "";
     let currentWord = "";
     let songQueue = new Queue();
     let replayQueue = new Queue();
-    let songFI = false;
+    let startFlag = false;
+    let pauseFlag = false
+    let lyricsFlag = false;
     let songTime = Date.now();
     let elapsedTime = Date.now() - songTime;
     let songFinishTime;
@@ -41,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let progressBarWidth = 0;
 
     window.onSpotifyWebPlaybackSDKReady = () => {
-        const token = 'BQAHz8IQt3CF3pcntG5XTnRwlUp5Gj4QhiYFJUptmd6x8AaDIYO9CJmA1iA7C4Gu6EXI_m7WCRyeQyIgBJzKBOG6ejyCeeTZS9bZ8o1G7FQAd3WaQVHRvyT_LmO1DYUTNFldOUQzy-tb3WV24TQPF0di0bsGMYBo51zfhxI';
+        const token = 'BQD0DxwfxIahC2bvC7BFEuVojDBKZzL3Hx58RwoXX1vCRoRBLPilggctoZrb4X2eMneCkvgSdAMI9Kph_hNwUVdeC-XwBwSSAMz2tPTZYe8kya1FE0im5YE1D-2WSbb54bwF-y3H2ThrwSMVrr8vVOL9aPt_CVUQz6E_JAo';
         const player = new Spotify.Player({
             name: 'Web Playback SDK Quick Start Player',
             getOAuthToken: cb => { cb(token); }
@@ -57,28 +61,27 @@ document.addEventListener("DOMContentLoaded", () => {
         player.addListener('player_state_changed', state => {
             currentSong = state.track_window.current_track.name;
             currentArtist = state.track_window.current_track.artists[0].name;
-            if (currentSong) {
+            console.log("player state changed");
+            console.log(`currentSong: ${currentSong} previousSong: ${previousSong}`)
 
+
+            if (pauseFlag){
+                player.pause().then(() => {
+                    console.log('Paused because repeat button was pushed and should not be automatically played');
+                });
+            }else{
+                player.resume().then(() => {
+                    console.log('play');
+                });
+            }
+
+
+            if (currentSong != previousSong) {
                 songTitle.innerHTML = (`${currentSong} by ${currentArtist}`);
 
-                fetch(`https://api.lyrics.ovh/v1/${currentArtist}/${currentSong}`)
-                    //  .json() method returns a Promise
-                    // of the JSON response body parsed fromJSOn.
-                    .then(res => res.json())
-                    .then(data => {
-                        //test.innerHTML = data.lyrics;
-                        if (!songFI) {
-                            songQueue.addAll(lyricsSeparate(data.lyrics));
-                            currentWord = songQueue.remove();
-                            test.innerHTML = songQueue.printOutInOrder();
-
-                            //console.log(currentWord);
-                            cWordText.innerHTML = currentWord;
-                            songFI = true;
-                        }
-                    })
-                    .catch(err => console.log(err));
-
+                getLyrics();
+                previousSong = currentSong;
+                previousArtist = currentArtist;
 
             }
 
@@ -104,28 +107,35 @@ document.addEventListener("DOMContentLoaded", () => {
         player.connect();
 
 
-        previousSong.addEventListener("click", event => {
+        previousButton.addEventListener("click", event => {
             player.previousTrack().then(() => {
+                previousSong = currentSong;
+                previousArtist = currentArtist;
+                lyricsFlag = false;
                 console.log('Moved to previous Track');
             });
         });
 
 
-        nextSong.addEventListener("click", event => {
+        nextButton.addEventListener("click", event => {
             player.nextTrack().then(() => {
+                previousSong = currentSong;
+                previousArtist = currentArtist;
+                lyricsFlag = false;
                 console.log('Set to next track!');
             });
         });
 
 
-        startSong.addEventListener("click", event => {
+        startButton.addEventListener("click", event => {
 
             player.resume().then(() => {
                 console.log('Start playing in case song was paused! 1');
             });
-            player.seek(180 * 1000).then(() => {
+            player.seek(150 * 1000).then(() => {
                 console.log('Start at Song at 0 1');
             });
+            startFlag = true;
             songTime = Date.now();
             let tempSong = new String(currentSong);
 
@@ -135,12 +145,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     elapsedTime = Date.now() - songTime;
                     timer.innerHTML = (`${(elapsedTime / 1000).toFixed(2)}s`);
                 } else {
-                    player.pause().then(() => {
-                        console.log('Stop song because main song was over 1.');
-                    });
-                    console.log("hi");
                     songFinishTime = elapsedTime;
-                    clearInterval(interval); //Stops interval timer from going on.
+                    previousSong = currentSong;
+                    previousArtist = currentArtist;
+                    pauseFlag = true;
+                    clearTimer(player, interval);
                 }
             }, 10)
 
@@ -151,13 +160,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         replayButton.addEventListener("click", event => {
-
+            pauseButton = false;
             player.previousTrack().then(() => {
                 console.log('Set to previous track! 2');
             });
 
 
-            player.seek(180 * 1000).then(() => {
+            player.seek(150 * 1000).then(() => {
                 console.log('Start Song at 0 2');
             });
             player.resume().then(() => {
@@ -205,9 +214,9 @@ document.addEventListener("DOMContentLoaded", () => {
                                 flashWord.innerHTML = replayWord.word;
                                 flashWord.style.fontFamily = "Impact";
                                 flashWord.style.position = "relative";
-                                flashWord.style.top = "0px";
-                                flashWord.style.left = curX * xUnit + 'px';
-                                main.appendChild(flashWord);
+                                //flashWord.style.top = curY * yUnit + 'px'
+                                //flashWord.style.left = curX * xUnit + 'px';
+                                replayText.appendChild(flashWord);
                                 setTimeout(function () { flashWord.parentNode.removeChild(flashWord); }, 10000);
 
                                 //pop next word out
@@ -222,7 +231,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     timer.innerHTML = (elapsedTime / 1000).toFixed(2);
                 } else {
                     player.pause().then(() => {
-                        console.log('Stop song because main song was over.');
+                        console.log('Stop song because repeated song was over.');
+                        timer.innerHTML = "";
+                        startFlag = false;
+                        pauseFlag = false;
                         clearInterval(interval); //Stops interval timer from going on.
                     });
                 }
@@ -245,25 +257,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.addEventListener("keydown", function (event) {
         // console.log(event.which);
-        if (songFI && (event.keyCode == 74 || event.keyCode == 70)) {
+        if (startFlag && (event.keyCode == 74 || event.keyCode == 70)) {
             if (keypressDowned === false) {
 
                 // Starts the interval function for time bar
                 progressBar = setInterval(frame, 10);
                 function frame() {
-
-                    if (progressBarWidth > 200){
+                    if (progressBarWidth > 500) {
+                        elem.style.backgroundColor = "black";
+                    } else if (progressBarWidth > 400) {
+                        elem.style.backgroundColor = "purple";
+                    } else if (progressBarWidth > 300) {
+                        elem.style.backgroundColor = "blue";
+                    }
+                    else if (progressBarWidth > 200) {
                         elem.style.backgroundColor = "red";
-                    }else if (progressBarWidth > 100){
+                    } else if (progressBarWidth > 100) {
                         elem.style.backgroundColor = "yellow";
-                    }else{
+                    } else {
                         elem.style.backgroundColor = "green";
                     }
                     elem.style.color = "#333";
                     progressBarWidth++;
                     elem.style.width = progressBarWidth % 100 + '%';
                     elem.innerHTML = progressBarWidth * 1;
-                    
+
 
                 }
 
@@ -277,10 +295,12 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     document.addEventListener("keyup", function (event) {
-        if (songFI  && (event.keyCode == 74 || event.keyCode == 70)) {
+        if (startFlag && (event.keyCode == 74 || event.keyCode == 70)) {
             clearInterval(progressBar);
             elem.style.color = "#333";
             progressBarWidth = 0;
+            elem.style.width = 0;
+            elem.style.innerHTML = "";
             //console.log(event.which);
             endTime = getTime();
             //console.log(`End time is ${endTime}, start Time is ${startTime}`);
@@ -301,7 +321,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 cWordText.innerHTML = "";
             }
 
-            test.innerHTML = songQueue.printOutInOrder();
+            lyricsText.innerHTML = songQueue.printOutInOrder();
 
             // let node = document.createElement("li");    // Create a <li> node
             // node.innerHTML = `${song.word}: ${song.time}: ${song.totalTime}`;                      // Set node's text
@@ -312,6 +332,48 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
     );
+
+    function getLyrics() {
+        songQueue.removeAll();
+        console.log(`Getting Song: ${currentSong} by ${currentArtist}`);
+        fetch(`https://api.lyrics.ovh/v1/${currentArtist}/${currentSong}`)
+            //  .json() method returns a Promise
+            // of the JSON response body parsed fromJSOn.
+            .then(res => res.json())
+            .then(data => {
+                //test.innerHTML = data.lyrics;
+                if (!lyricsFlag) {
+                    songQueue.addAll(lyricsSeparate(data.lyrics));
+                    currentWord = songQueue.remove();
+                    lyricsText.innerHTML = songQueue.printOutInOrder();
+                    console.log("where it going");
+                    console.log(currentWord);
+                    cWordText.innerHTML = currentWord;
+                    lyricsFlag = true;
+                }
+            })
+            .catch(err => {
+                console.log(err);
+                cWordText.innerHTML = "";
+                lyricsText.innerHTML = "Sorry, No Lyrics Found, Try Another Song :(";
+            }
+            );
+
+    }
+
+
+    function clearTimer(player, timer){
+        clearInterval(timer); //Stops interval timer from going on.
+
+        player.previousTrack().then(() => {
+            console.log('Set to repeat track.');
+        });
+
+
+        player.seek(150 * 1000).then(() => {
+            console.log('Start Song at time');
+        });
+    }
 
 });
 
@@ -361,6 +423,10 @@ function Queue() {
         return this.data.pop();
     }
 
+    Queue.prototype.removeAll = function () {
+        this.data = [];
+        return;
+    }
     Queue.prototype.bottom = function () {
         return this.data[0];
     }

@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let wordList = document.getElementById("wordList");
     let elem = document.getElementById("myBar");
     let startSong = document.getElementById("startSong");
+    let main = document.getElementById("main");
 
     let replayButton = document.getElementById("replayButton");
     let replayText = document.getElementById("replayText");
@@ -40,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let progressBarWidth = 0;
 
     window.onSpotifyWebPlaybackSDKReady = () => {
-        const token = 'BQDWkAD2aVH91A5P3yMWxTXkLXP8nySh3GdhWD0X7PRI170ltslz9Mae9U7zNuyzE33Gxc5h6n55yE334UFrMRZYOyFuWYFe91loXQRf-L6BViHDF6fMgsGOAEmU5_txWiuV2TOFkMrOVsVyYAcXwCKktQosGFRkf5TqioQ';
+        const token = 'BQAHz8IQt3CF3pcntG5XTnRwlUp5Gj4QhiYFJUptmd6x8AaDIYO9CJmA1iA7C4Gu6EXI_m7WCRyeQyIgBJzKBOG6ejyCeeTZS9bZ8o1G7FQAd3WaQVHRvyT_LmO1DYUTNFldOUQzy-tb3WV24TQPF0di0bsGMYBo51zfhxI';
         const player = new Spotify.Player({
             name: 'Web Playback SDK Quick Start Player',
             getOAuthToken: cb => { cb(token); }
@@ -122,11 +123,13 @@ document.addEventListener("DOMContentLoaded", () => {
             player.resume().then(() => {
                 console.log('Start playing in case song was paused! 1');
             });
-            player.seek(150 * 1000).then(() => {
+            player.seek(180 * 1000).then(() => {
                 console.log('Start at Song at 0 1');
             });
             songTime = Date.now();
             let tempSong = new String(currentSong);
+
+            //Does not work if SongList is 1 Song.
             let interval = setInterval(function () {
                 if (tempSong == currentSong) {
                     elapsedTime = Date.now() - songTime;
@@ -135,6 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     player.pause().then(() => {
                         console.log('Stop song because main song was over 1.');
                     });
+                    console.log("hi");
                     songFinishTime = elapsedTime;
                     clearInterval(interval); //Stops interval timer from going on.
                 }
@@ -153,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
 
-            player.seek(150 * 1000).then(() => {
+            player.seek(180 * 1000).then(() => {
                 console.log('Start Song at 0 2');
             });
             player.resume().then(() => {
@@ -161,21 +165,20 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
 
-            console.log(replayQueue);
+            //console.log(replayQueue);
             let replayWord = replayQueue.remove();
-            console.log(replayWord);
+            //console.log(replayWord);
 
 
             songTime = Date.now();
             elapsedTime = 0;
-            console.log(`songTime is ${songTime}`);
-            console.log(`songFinishTime is ${songFinishTime}`);
-            console.log(`elapsedTime is ${elapsedTime}`);
-            let tempSong = new String(currentSong);
+            //console.log(`songTime is ${songTime}`);
+            //console.log(`songFinishTime is ${songFinishTime}`);
+            //console.log(`elapsedTime is ${elapsedTime}`);
             const rows = 3;
             const columns = 10;
-            let yUnit = sHeight / 3;
-            let xUnit = sWidth / 10;
+            let yUnit = 100;
+            let xUnit = 400;
             let curY = 0;
             let curX = 0;
             let interval = setInterval(function () {
@@ -197,17 +200,15 @@ document.addEventListener("DOMContentLoaded", () => {
                                     curX = 0;
                                     curY++;
                                 }
-
-
                                 let flashWord = document.createElement("p");
                                 flashWord.classList.add("flashWord");
                                 flashWord.innerHTML = replayWord.word;
-                                flashWord.style.position = "absolute"
-                                flashWord.style.top = curY * yUnit + 'px';
+                                flashWord.style.fontFamily = "Impact";
+                                flashWord.style.position = "relative";
+                                flashWord.style.top = "0px";
                                 flashWord.style.left = curX * xUnit + 'px';
-                                let parent = document.getElementById("songTitle");
-                                parent.appendChild(flashWord);
-                                setTimeout(function () { flashWord.style.visibility = "hidden" }, 4000);
+                                main.appendChild(flashWord);
+                                setTimeout(function () { flashWord.parentNode.removeChild(flashWord); }, 10000);
 
                                 //pop next word out
                                 curX++;
@@ -251,9 +252,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 progressBar = setInterval(frame, 10);
                 function frame() {
 
+                    if (progressBarWidth > 200){
+                        elem.style.backgroundColor = "red";
+                    }else if (progressBarWidth > 100){
+                        elem.style.backgroundColor = "yellow";
+                    }else{
+                        elem.style.backgroundColor = "green";
+                    }
+                    elem.style.color = "#333";
                     progressBarWidth++;
-                    elem.style.width = progressBarWidth + '%';
+                    elem.style.width = progressBarWidth % 100 + '%';
                     elem.innerHTML = progressBarWidth * 1;
+                    
 
                 }
 
@@ -267,9 +277,9 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     document.addEventListener("keyup", function (event) {
-        console.log(event.keyCode);
         if (songFI  && (event.keyCode == 74 || event.keyCode == 70)) {
             clearInterval(progressBar);
+            elem.style.color = "#333";
             progressBarWidth = 0;
             //console.log(event.which);
             endTime = getTime();
@@ -282,22 +292,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 time: wordTimer,
                 totalTime: elapsedTime
             };
+            //console.log(song);
             replayQueue.add(song);
             currentWord = songQueue.remove();
             if (currentWord) {
                 cWordText.innerHTML = currentWord;
             } else {
-                cWordText.innerHTML = "End of First Round";
+                cWordText.innerHTML = "";
             }
 
             test.innerHTML = songQueue.printOutInOrder();
 
-            let node = document.createElement("li");    // Create a <li> node
-            node.innerHTML = `${song.word}: ${song.time}: ${song.totalTime}`;                      // Set node's text
-            wordList.insertBefore(node, wordList.firstChild);
-            if (wordList.childElementCount > 9) {
-                wordList.removeChild(wordList.lastChild)
-            }
+            // let node = document.createElement("li");    // Create a <li> node
+            // node.innerHTML = `${song.word}: ${song.time}: ${song.totalTime}`;                      // Set node's text
+            // wordList.insertBefore(node, wordList.firstChild);
+            // if (wordList.childElementCount > 9) {
+            //     wordList.removeChild(wordList.lastChild)
+            // }
         }
     }
     );

@@ -16,43 +16,48 @@
 
 
 
-    <!-- Navigation Bar -->
-    <div class="navbar">
-        <button id="startButton">Start Song</button>
-        <button id="replayButton">Replay Song</button>
-        <button id="previousSong">Previous Song</button>
-        <button id="nextSong">Next Song</button>
-    </div>
+  
 
 
 
 
-
-    <div class="column">
-        <div class="timeDiv">
-            <p id="timer">0.00s</p>
+    <div id="UIInterface">
+        <!-- Navigation Bar -->
+        <div class="navbar">
+            <button id="startButton">Start Song</button>
+            <button id="replayButton">Replay Song</button>
+            <button id="previousSong">Previous Song</button>
+            <button id="nextSong">Next Song</button>
         </div>
-        <div class="header">
-            <p class="cornerTR">Karaoke.io </p>
-        </div>
-        <div class="transparent">
+        <div class="column">
+            <div class="timeDiv">
+                <p id="timer">0.00s</p>
+            </div>
+            <div class="header">
+                <p>Karaoke.io </p>
+            </div>
+            <div class="transparent">
             </div>
     
-        <div class="titleDiv">
-            <p id="songTitle">Not connected to Spotify</p>
+            <div class="titleDiv">
+                <p id="songTitle">Not connected to Spotify</p>
+            </div>
         </div>
-    </div>
-    <!-- The flexible grid (content) -->
-    <div class="row">
-        <div class="bar">
-            <div id="myBar" style="width:0%">0s</div>
-        </div>
+        <!-- The flexible grid (content) -->
+        <div class="row">
+            <div class="bar">
+                <div id="myBar" style="width:0%">0</div>
+            </div>
         <span id="main"class="main">
             <span class="firstWord" id="currentWord"></span>
             <span class="restWord" id="lyricsDiv"></span>
         </span>
-        <span id=replayText></span>
     </div>
+</div>
+    <span id=replayText>
+        <span class = "verticalLine" ></span>
+    </span>
+
 
 </div>
 
